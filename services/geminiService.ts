@@ -2,11 +2,16 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { ListeningContent, ReadingContent, SpeakingContent, WritingContent, WritingEvaluation, GeneralEvaluation } from '../types';
 
-if (!process.env.API_KEY) {
+
+
+const apiKey = import.meta.env.VITE_API_KEY;
+
+
+if (!apiKey) {
     throw new Error("API_KEY environment variable not set");
 }
 
-const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
+const ai = new GoogleGenAI({ apiKey: apiKey });
 
 const questionSchema = {
     type: Type.OBJECT,
