@@ -10,7 +10,7 @@ export enum ExamSection {
 export interface Question {
   id: string;
   question: string;
-  type: 'multiple_choice' | 'short_answer' | 'true_false_not_given';
+  type: 'multiple_choice' | 'short_answer' | 'true_false_not_given' | 'matching_headings';
   options?: string[];
   answer?: string;
 }
@@ -21,16 +21,31 @@ export interface ListeningContent {
   questions: Question[];
 }
 
+export interface ReadingPassage {
+    title: string;
+    passage: string;
+    questions: Question[];
+}
+
 export interface ReadingContent {
+  passages: ReadingPassage[];
+}
+
+export interface ChartData {
+  type: 'bar' | 'line' | 'pie';
   title: string;
-  passage: string;
-  questions: Question[];
+  labels: string[];
+  datasets: {
+    label: string;
+    data: number[];
+  }[];
 }
 
 export interface WritingContent {
   task1: {
     prompt: string;
     imageUrl: string;
+    chartData: ChartData;
   };
   task2: {
     prompt: string;

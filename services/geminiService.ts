@@ -13,7 +13,7 @@ const questionSchema = {
     properties: {
         id: { type: Type.STRING },
         question: { type: Type.STRING },
-        type: { type: Type.STRING, enum: ['multiple_choice', 'short_answer', 'true_false_not_given'] },
+        type: { type: Type.STRING, enum: ['multiple_choice', 'short_answer', 'true_false_not_given', 'matching_headings'] },
         options: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true },
         answer: { type: Type.STRING, description: "The correct answer for the question." }
     },
@@ -44,17 +44,26 @@ export async function generateListeningTest(): Promise<ListeningContent> {
 export async function generateReadingTest(): Promise<ReadingContent> {
     const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: "Generate a complete IELTS Academic Reading test passage and questions. The passage should be 700-800 words on an academic topic. Create 5-7 questions of various types (e.g., multiple choice, true/false/not given, short answer). Provide correct answers for each question.",
+        contents: "Generate a complete IELTS Academic Reading test with 3 passages and a total of 40 questions. The passages should be on distinct academic topics, each approximately 700-800 words. Distribute the 40 questions across the three passages (e.g., 13, 13, 14 questions). The question types should be varied (e.g., multiple choice, true/false/not given, short answer, matching headings). Provide correct answers for all questions. Ensure question IDs are unique across all passages.",
         config: {
             responseMimeType: "application/json",
             responseSchema: {
                 type: Type.OBJECT,
                 properties: {
-                    title: { type: Type.STRING },
-                    passage: { type: Type.STRING },
-                    questions: { type: Type.ARRAY, items: questionSchema }
+                   passages: {
+                       type: Type.ARRAY,
+                       items: {
+                           type: Type.OBJECT,
+                           properties: {
+                               title: { type: Type.STRING },
+                               passage: { type: Type.STRING },
+                               questions: { type: Type.ARRAY, items: questionSchema }
+                           },
+                           required: ['title', 'passage', 'questions']
+                       }
+                   }
                 },
-                required: ['title', 'passage', 'questions']
+                required: ['passages']
             }
         }
     });
@@ -65,7 +74,7 @@ export async function generateReadingTest(): Promise<ReadingContent> {
 export async function generateWritingTest(): Promise<WritingContent> {
     const response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
-        contents: "Generate prompts for IELTS Academic Writing Task 1 and Task 2. Task 1 should describe a chart or graph. Task 2 should be an essay prompt on an academic topic.",
+        contents: "Generate prompts for IELTS Academic Writing Task 1 and Task 2. For Task 1, provide a prompt describing a chart or graph, and also provide the underlying data for it as a JSON object. The data should include a chart type (bar, line, or pie), a title, labels for the x-axis, and one or more datasets each with a label and data points. The chart should be simple enough to be described in an IELTS Task 1 response. Task 2 should be an essay prompt on an academic topic.",
         config: {
             responseMimeType: "application/json",
             responseSchema: {
@@ -73,8 +82,30 @@ export async function generateWritingTest(): Promise<WritingContent> {
                 properties: {
                     task1: {
                         type: Type.OBJECT,
-                        properties: { prompt: { type: Type.STRING } },
-                        required: ['prompt']
+                        properties: { 
+                            prompt: { type: Type.STRING },
+                            chartData: {
+                                type: Type.OBJECT,
+                                properties: {
+                                    type: { type: Type.STRING, enum: ['bar', 'line', 'pie'] },
+                                    title: { type: Type.STRING },
+                                    labels: { type: Type.ARRAY, items: { type: Type.STRING } },
+                                    datasets: {
+                                        type: Type.ARRAY,
+                                        items: {
+                                            type: Type.OBJECT,
+                                            properties: {
+                                                label: { type: Type.STRING },
+                                                data: { type: Type.ARRAY, items: { type: Type.NUMBER } }
+                                            },
+                                            required: ['label', 'data']
+                                        }
+                                    }
+                                },
+                                required: ['type', 'title', 'labels', 'datasets']
+                            }
+                        },
+                        required: ['prompt', 'chartData']
                     },
                     task2: {
                         type: Type.OBJECT,
@@ -87,9 +118,31 @@ export async function generateWritingTest(): Promise<WritingContent> {
         }
     });
     
-    const content = JSON.parse(response.text);
-    // Add a placeholder image for the chart
-    content.task1.imageUrl = `https://picsum.photos/seed/${Date.now()}/600/400`;
+    const content = JSON.parse(response.text) as WritingContent;
+    
+    // Generate a real chart image from the data
+    const chartConfig = content.task1.chartData;
+    const chartJsConfig = {
+        type: chartConfig.type,
+        data: {
+            labels: chartConfig.labels,
+            datasets: chartConfig.datasets
+        },
+        options: {
+            title: {
+                display: true,
+                text: chartConfig.title
+            },
+            legend: {
+                display: chartConfig.datasets.length > 1
+            }
+        }
+    };
+
+    const stringifiedConfig = JSON.stringify(chartJsConfig);
+    const chartUrl = `https://quickchart.io/chart?c=${encodeURIComponent(stringifiedConfig)}&width=600&height=400&backgroundColor=white`;
+    content.task1.imageUrl = chartUrl;
+
     return content;
 }
 

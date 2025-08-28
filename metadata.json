@@ -1,5 +1,7 @@
 {
-  "name": "Copy of IELTS Academic AI Coach",
+  "name": "IELTS Academic AI Coach",
   "description": "An AI-powered application to help students practice for the IELTS Academic mock exams. Generate tests for Listening, Reading, Writing, and Speaking, and receive detailed feedback and evaluations powered by Gemini.",
-  "requestFramePermissions": []
+  "requestFramePermissions": [
+    "microphone"
+  ]
 }

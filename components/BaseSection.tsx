@@ -1,20 +1,22 @@
+
 import React, { useState, useCallback } from 'react';
 import { ExamContent, EvaluationResult } from '../types';
 import LoadingSpinner from './LoadingSpinner';
 import EvaluationDisplay from './EvaluationDisplay';
+import Timer from './Timer';
 import { SparklesIcon } from './IconComponents';
 
 interface BaseSectionProps<C extends ExamContent, A> {
     sectionTitle: string;
     generateTest: () => Promise<C>;
     evaluateAnswers: (content: C, answers: A) => Promise<EvaluationResult>;
-    // FIX: Update type to allow state setter functions.
     renderTest: (content: C, answers: A, handleAnswerChange: React.Dispatch<React.SetStateAction<A>>) => React.ReactNode;
     initialAnswers: A;
+    duration: number; // Duration in seconds
 }
 
 const BaseSection = <C extends ExamContent, A>(
-  { sectionTitle, generateTest, evaluateAnswers, renderTest, initialAnswers }: BaseSectionProps<C, A>
+  { sectionTitle, generateTest, evaluateAnswers, renderTest, initialAnswers, duration }: BaseSectionProps<C, A>
 ) => {
     const [content, setContent] = useState<C | null>(null);
     const [answers, setAnswers] = useState<A>(initialAnswers);
@@ -40,8 +42,8 @@ const BaseSection = <C extends ExamContent, A>(
         }
     }, [generateTest, initialAnswers]);
 
-    const handleSubmit = async () => {
-        if (!content) return;
+    const handleSubmit = useCallback(async () => {
+        if (!content || isEvaluating) return;
         setIsEvaluating(true);
         setError(null);
         setEvaluation(null);
@@ -54,7 +56,7 @@ const BaseSection = <C extends ExamContent, A>(
         } finally {
             setIsEvaluating(false);
         }
-    };
+    }, [content, answers, evaluateAnswers, isEvaluating]);
     
     const startNewTest = () => {
         setContent(null);
@@ -65,15 +67,16 @@ const BaseSection = <C extends ExamContent, A>(
 
     return (
         <div className="space-y-6">
-            <h2 className="text-2xl font-bold text-slate-800">{sectionTitle} Section</h2>
+            <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-100">{sectionTitle} Section</h2>
 
-            {error && <div className="p-4 bg-red-100 text-red-700 border border-red-200 rounded-lg">{error}</div>}
+            {error && <div className="p-4 bg-red-100 text-red-700 border border-red-200 rounded-lg dark:bg-red-900/30 dark:text-red-300 dark:border-red-700">{error}</div>}
 
             {!content && !isLoading && (
-                <div className="text-center p-8 bg-white rounded-xl shadow-sm border">
+                <div className="text-center p-8 bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
                     <button
                         onClick={handleGenerateTest}
-                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75"
+                        className="inline-flex items-center px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 disabled:bg-blue-400"
+                        disabled={isLoading}
                     >
                        <SparklesIcon className="w-5 h-5 mr-2" />
                         Generate New Test
@@ -84,21 +87,25 @@ const BaseSection = <C extends ExamContent, A>(
             {isLoading && <LoadingSpinner text="Generating your test..." />}
             
             {content && (
-                 <div className="p-6 bg-white rounded-xl shadow-sm border space-y-8">
-                     {renderTest(content, answers, setAnswers)}
-                     
-                     {!evaluation && !isEvaluating && (
-                        <div className="flex justify-end pt-4 border-t">
-                            <button
-                                onClick={handleSubmit}
-                                className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors"
-                            >
-                                Submit for Evaluation
-                            </button>
-                        </div>
-                     )}
-                     
-                     {isEvaluating && <LoadingSpinner text="Our AI examiner is evaluating your answers..." />}
+                 <div className="bg-white dark:bg-slate-800 rounded-xl shadow-sm border border-slate-200 dark:border-slate-700">
+                     <Timer duration={duration} onSubmit={handleSubmit} isPaused={isEvaluating || !!evaluation} />
+                     <div className="p-4 sm:p-6 space-y-8">
+                        {renderTest(content, answers, setAnswers)}
+                        
+                        {!evaluation && !isEvaluating && (
+                          <div className="flex justify-end pt-4 border-t border-slate-200 dark:border-slate-700">
+                              <button
+                                  onClick={handleSubmit}
+                                  className="px-6 py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition-colors disabled:bg-green-400"
+                                  disabled={isEvaluating}
+                              >
+                                  Submit for Evaluation
+                              </button>
+                          </div>
+                        )}
+                        
+                        {isEvaluating && <LoadingSpinner text="Our AI examiner is evaluating your answers..." />}
+                     </div>
                  </div>
             )}
 
