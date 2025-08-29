@@ -1,11 +1,7 @@
-
 import { GoogleGenAI, Type } from "@google/genai";
 import { ListeningContent, ReadingContent, SpeakingContent, WritingContent, WritingEvaluation, GeneralEvaluation } from '../types';
 
-
-
 const apiKey = import.meta.env.VITE_API_KEY;
-
 
 if (!apiKey) {
     throw new Error("API_KEY environment variable not set");
@@ -44,7 +40,6 @@ export async function generateListeningTest(): Promise<ListeningContent> {
     });
     return JSON.parse(response.text);
 }
-
 
 export async function generateReadingTest(): Promise<ReadingContent> {
     const response = await ai.models.generateContent({

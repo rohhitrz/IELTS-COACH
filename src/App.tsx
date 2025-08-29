@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { ExamSection } from './types';
 import Sidebar from './components/Sidebar';

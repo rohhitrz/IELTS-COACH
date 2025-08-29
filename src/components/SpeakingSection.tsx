@@ -1,9 +1,8 @@
-
 import React, { useState, useCallback, useEffect } from 'react';
 import BaseSection from './BaseSection';
 import { generateSpeakingTest, evaluateGeneral } from '../services/geminiService';
 import { SpeakingContent } from '../types';
-import { useSpeechToText } from './useSpeechToText';
+import { useSpeechToText } from '../hooks/useSpeechToText';
 import { MicrophoneIcon, StopCircleIcon } from './IconComponents';
 
 type Answers = { part1: { [key: string]: string }, part2: string, part3: { [key: string]: string } };

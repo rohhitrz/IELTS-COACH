@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { ExamSection } from '../types';
 import { ListeningIcon, ReadingIcon, SpeakingIcon, WritingIcon, HomeIcon, XIcon } from './IconComponents';

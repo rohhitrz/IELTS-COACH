@@ -1,4 +1,3 @@
-
 import React from 'react';
 import { EvaluationResult, WritingEvaluation, GeneralEvaluation } from '../types';
 

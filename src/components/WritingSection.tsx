@@ -1,4 +1,3 @@
-
 import React from 'react';
 import BaseSection from './BaseSection';
 import { generateWritingTest, evaluateWriting } from '../services/geminiService';

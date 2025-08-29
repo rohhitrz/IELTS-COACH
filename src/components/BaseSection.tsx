@@ -1,4 +1,3 @@
-
 import React, { useState, useCallback } from 'react';
 import { ExamContent, EvaluationResult } from '../types';
 import LoadingSpinner from './LoadingSpinner';

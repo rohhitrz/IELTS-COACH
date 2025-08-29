@@ -1,4 +1,3 @@
-
 export enum ExamSection {
   WELCOME = 'WELCOME',
   LISTENING = 'LISTENING',
