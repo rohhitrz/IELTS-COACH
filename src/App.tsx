@@ -7,6 +7,7 @@ import WritingSection from './components/WritingSection';
 import SpeakingSection from './components/SpeakingSection';
 import ListeningSection from './components/ListeningSection';
 import { MoonIcon, SunIcon, MenuIcon } from './components/IconComponents';
+import './styles/animations.css';
 
 const App: React.FC = () => {
   const [activeSection, setActiveSection] = useState<ExamSection>(ExamSection.WELCOME);
