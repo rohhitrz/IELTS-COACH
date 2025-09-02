@@ -31,6 +31,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
     try {
         console.log('API Key exists:', !!apiKey);
+        console.log('API Key length:', apiKey ? apiKey.length : 0);
         console.log('Request body:', req.body);
         
         if (!apiKey) {
@@ -43,7 +44,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: 'Invalid test type' });
         }
 
+        console.log('Initializing GoogleGenAI...');
         const ai = new GoogleGenAI({ apiKey: apiKey });
+        console.log('GoogleGenAI initialized successfully');
         let response;
         let content;
 
