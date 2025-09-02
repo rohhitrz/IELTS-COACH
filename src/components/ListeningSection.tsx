@@ -27,29 +27,30 @@ const renderQuestion = (q: Question, answer: string | undefined, onChange: (id: 
 
 const ListeningSection: React.FC = () => {
     return (
-        <BaseSection<ListeningContent, Answers>
-            sectionTitle="Listening"
-            generateTest={generateListeningTest}
-            evaluateAnswers={(content, answers) => evaluateGeneral('Listening', content, answers)}
-            initialAnswers={{}}
-            duration={2400} // 40 minutes
-            renderTest={(content, answers, setAnswers) => (
-                <div>
-                    <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/50 border dark:border-slate-700 rounded-lg">
-                        <h3 className="text-lg font-semibold mb-2">Scenario</h3>
-                        <p className="text-slate-600 dark:text-slate-300">{content.scenario}</p>
-                    </div>
-                    <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/50 border dark:border-slate-700 rounded-lg max-h-60 overflow-y-auto">
-                        <h3 className="text-lg font-semibold mb-2">Transcript</h3>
-                        <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{content.transcript}</p>
-                    </div>
-                    <div>
-                        <h3 className="text-lg font-semibold mb-4">Questions</h3>
-                        {content.questions.map(q => renderQuestion(q, answers[q.id], (id, value) => setAnswers(prev => ({ ...prev, [id]: value })) ))}
-                    </div>
-                </div>
-            )}
-        />
+        // <BaseSection<ListeningContent, Answers>
+        //     sectionTitle="Listening"
+        //     generateTest={generateListeningTest}
+        //     evaluateAnswers={(content, answers) => evaluateGeneral('Listening', content, answers)}
+        //     initialAnswers={{}}
+        //     duration={2400} // 40 minutes
+        //     renderTest={(content, answers, setAnswers) => (
+        //         <div>
+        //             <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/50 border dark:border-slate-700 rounded-lg">
+        //                 <h3 className="text-lg font-semibold mb-2">Scenario</h3>
+        //                 <p className="text-slate-600 dark:text-slate-300">{content.scenario}</p>
+        //             </div>
+        //             <div className="mb-6 p-4 bg-slate-50 dark:bg-slate-700/50 border dark:border-slate-700 rounded-lg max-h-60 overflow-y-auto">
+        //                 <h3 className="text-lg font-semibold mb-2">Transcript</h3>
+        //                 <p className="text-slate-600 dark:text-slate-300 whitespace-pre-wrap">{content.transcript}</p>
+        //             </div>
+        //             <div>
+        //                 <h3 className="text-lg font-semibold mb-4">Questions</h3>
+        //                 {content.questions.map(q => renderQuestion(q, answers[q.id], (id, value) => setAnswers(prev => ({ ...prev, [id]: value })) ))}
+        //             </div>
+        //         </div>
+        //     )}
+        // />
+        <h1 className='text-4xl font-bold text-slate-800 dark:text-slate-100 animate-fadeInDown'>COMING SOON</h1>
     );
 };
 
