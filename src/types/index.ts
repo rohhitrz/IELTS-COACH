@@ -81,6 +81,8 @@ export interface WritingEvaluation {
     overallBandScore: number;
     strengths: string;
     areasForImprovement: string;
+    wordCountAnalysis?: string;
+    errorAnalysis?: string;
 }
 
 export interface GeneralEvaluation {

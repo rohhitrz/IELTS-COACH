@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import BaseSection from './BaseSection';
-import { generateReadingTest, evaluateGeneral } from '../services/geminiService';
+import { generateReadingTest, evaluateGeneral } from '../services/apiService';
 import { ReadingContent, Question } from '../types';
 
 type Answers = { [key: string]: string };

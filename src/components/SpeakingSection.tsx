@@ -1,6 +1,6 @@
 import React, { useState, useCallback, useEffect } from 'react';
 import BaseSection from './BaseSection';
-import { generateSpeakingTest, evaluateGeneral } from '../services/geminiService';
+import { generateSpeakingTest, evaluateGeneral } from '../services/apiService';
 import { SpeakingContent } from '../types';
 import { useSpeechToText } from '../hooks/useSpeechToText';
 import { MicrophoneIcon, StopCircleIcon } from './IconComponents';

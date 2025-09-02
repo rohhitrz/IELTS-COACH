@@ -20,9 +20,27 @@ An AI-powered IELTS Academic test preparation application built with React and T
 2. Install dependencies: `npm install`
 3. Create a `.env` file with your Gemini API key:
    ```
-   VITE_GEMINI_API_KEY=your_api_key_here
+   GEMINI_API_KEY=your_api_key_here
    ```
 4. Start the development server: `npm run dev`
+
+## Deployment
+
+This application is designed to be deployed on Vercel with serverless API routes.
+
+### Vercel Deployment
+
+1. Connect your repository to Vercel
+2. Set the environment variable in Vercel dashboard:
+   - `GEMINI_API_KEY`: Your Google Gemini API key
+3. Deploy - Vercel will automatically build and deploy both the frontend and API routes
+
+### Security Features
+
+- API key is stored server-side only (not exposed to browser)
+- All AI operations happen through secure `/api/*` endpoints
+- Frontend makes fetch requests to serverless functions
+- No sensitive data in client-side bundle
 
 ## Technologies Used
 
@@ -36,6 +54,10 @@ An AI-powered IELTS Academic test preparation application built with React and T
 ## Project Structure
 
 ```
+├── api/                    # Vercel serverless functions
+│   ├── generate.ts         # Test generation endpoint
+│   ├── evaluate.ts         # Answer evaluation endpoint
+│   └── package.json        # API dependencies
 ├── src/
 │   ├── components/          # React components
 │   │   ├── BaseSection.tsx
@@ -52,7 +74,7 @@ An AI-powered IELTS Academic test preparation application built with React and T
 │   ├── hooks/              # Custom React hooks
 │   │   └── useSpeechToText.tsx
 │   ├── services/           # API services
-│   │   └── geminiService.ts
+│   │   └── apiService.ts
 │   ├── types/              # TypeScript type definitions
 │   │   └── index.ts
 │   ├── App.tsx             # Main application component

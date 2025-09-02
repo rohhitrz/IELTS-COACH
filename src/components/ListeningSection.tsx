@@ -1,6 +1,6 @@
 import React from 'react';
 import BaseSection from './BaseSection';
-import { generateListeningTest, evaluateGeneral } from '../services/geminiService';
+import { generateListeningTest, evaluateGeneral } from '../services/apiService';
 import { ListeningContent, Question } from '../types';
 
 type Answers = { [key: string]: string };

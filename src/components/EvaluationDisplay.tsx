@@ -105,6 +105,35 @@ const EvaluationDisplay: React.FC<EvaluationDisplayProps> = ({ result }) => {
         </AnimatedCard>
       )}
 
+      {/* Detailed Analysis (Writing only) */}
+      {isWritingEval && (result as WritingEvaluation).wordCountAnalysis && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+          <AnimatedCard className="p-6 bg-blue-50 dark:bg-blue-900/10 border-blue-200 dark:border-blue-800" delay={500}>
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-blue-600 dark:text-blue-400 font-bold text-sm">W</span>
+              </div>
+              <div>
+                <h4 className="font-semibold text-lg text-blue-800 dark:text-blue-200 mb-3">Word Count Analysis</h4>
+                <p className="text-blue-700 dark:text-blue-300 leading-relaxed">{(result as WritingEvaluation).wordCountAnalysis}</p>
+              </div>
+            </div>
+          </AnimatedCard>
+
+          <AnimatedCard className="p-6 bg-purple-50 dark:bg-purple-900/10 border-purple-200 dark:border-purple-800" delay={550}>
+            <div className="flex items-start space-x-3">
+              <div className="w-8 h-8 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center flex-shrink-0">
+                <span className="text-purple-600 dark:text-purple-400 font-bold text-sm">E</span>
+              </div>
+              <div>
+                <h4 className="font-semibold text-lg text-purple-800 dark:text-purple-200 mb-3">Error Analysis</h4>
+                <p className="text-purple-700 dark:text-purple-300 leading-relaxed">{(result as WritingEvaluation).errorAnalysis}</p>
+              </div>
+            </div>
+          </AnimatedCard>
+        </div>
+      )}
+
       {/* Strengths and Improvements */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AnimatedCard className="p-6 bg-green-50 dark:bg-green-900/10 border-green-200 dark:border-green-800" delay={600}>

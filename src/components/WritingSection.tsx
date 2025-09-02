@@ -1,6 +1,6 @@
 import React from 'react';
 import BaseSection from './BaseSection';
-import { generateWritingTest, evaluateWriting } from '../services/geminiService';
+import { generateWritingTest, evaluateWriting } from '../services/apiService';
 import { WritingContent } from '../types';
 
 type Answers = { task1: string; task2: string };
@@ -31,8 +31,8 @@ const WritingSection: React.FC = () => {
                                 className="w-full h-48 p-2 border rounded-md bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600"
                                 aria-describedby="task1-word-count"
                             />
-                             <p id="task1-word-count" className="text-sm text-right text-slate-500 dark:text-slate-400">
-                                Word count: {countWords(answers.task1)}
+                             <p id="task1-word-count" className={`text-sm text-right ${countWords(answers.task1) < 150 ? 'text-red-500 dark:text-red-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
+                                Word count: {countWords(answers.task1)} {countWords(answers.task1) < 150 && '(Minimum: 150 words)'}
                             </p>
                         </div>
                     </div>
@@ -47,8 +47,8 @@ const WritingSection: React.FC = () => {
                                 className="w-full h-64 p-2 border rounded-md bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600"
                                 aria-describedby="task2-word-count"
                             />
-                             <p id="task2-word-count" className="text-sm text-right text-slate-500 dark:text-slate-400">
-                                Word count: {countWords(answers.task2)}
+                             <p id="task2-word-count" className={`text-sm text-right ${countWords(answers.task2) < 250 ? 'text-red-500 dark:text-red-400 font-semibold' : 'text-slate-500 dark:text-slate-400'}`}>
+                                Word count: {countWords(answers.task2)} {countWords(answers.task2) < 250 && '(Minimum: 250 words)'}
                             </p>
                         </div>
                     </div>
