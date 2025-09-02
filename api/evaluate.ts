@@ -3,12 +3,6 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const apiKey = process.env.GEMINI_API_KEY;
 
-if (!apiKey) {
-  throw new Error("GEMINI_API_KEY environment variable not set");
-}
-
-const ai = new GoogleGenAI({ apiKey: apiKey });
-
 const criterionSchema = {
   type: Type.OBJECT,
   properties: {
@@ -19,11 +13,27 @@ const criterionSchema = {
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Add CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
   }
 
   try {
+    console.log('API Key exists:', !!apiKey);
+    console.log('Request body:', req.body);
+    
+    if (!apiKey) {
+      return res.status(500).json({ error: 'GEMINI_API_KEY environment variable not set' });
+    }
+
     const {
       evaluationType,
       content,
@@ -38,6 +48,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       return res.status(400).json({ error: "Invalid evaluation type" });
     }
 
+    const ai = new GoogleGenAI({ apiKey: apiKey });
     let response;
     let result;
 
@@ -282,6 +293,11 @@ Provide honest, detailed feedback that helps improvement.`;
     res.status(200).json(result);
   } catch (error) {
     console.error("Error evaluating answers:", error);
-    res.status(500).json({ error: "Failed to evaluate answers" });
+    console.error("Error details:", error.message);
+    res.status(500).json({ 
+      error: "Failed to evaluate answers",
+      details: error.message,
+      hasApiKey: !!apiKey
+    });
   }
 }
