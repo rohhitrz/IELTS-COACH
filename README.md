@@ -4,8 +4,8 @@ An AI-powered IELTS Academic test preparation application built with React and T
 
 ## Features
 
-- **Listening Section**: Practice with AI-generated listening scenarios and questions
-- **Reading Section**: Work through academic passages with various question types
+- **Listening Section**: Practice with AI-generated listening scenarios and questions-coming soon
+- **Reading Section**: Work through academic passages with various question types-WIP
 - **Writing Section**: Complete Task 1 (chart description) and Task 2 (essay) with AI evaluation
 - **Speaking Section**: Practice all three parts with speech-to-text functionality
 - **AI Evaluation**: Get detailed feedback and band scores for your performance
