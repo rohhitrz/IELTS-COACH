@@ -2,24 +2,19 @@
 
 An AI-powered IELTS Academic test preparation app. It generates practice tests and evaluates responses using Google's Gemini API, with all AI calls made server-side through Vercel serverless functions so the API key is never exposed to the browser.
 
-## Status
-
-| Section | Status |
-|---|---|
-| Writing | Fully implemented — Task 1 + Task 2, AI-generated prompts/charts, AI band-score evaluation |
-| Reading | Fully implemented — AI-generated passages and questions, AI evaluation |
-| Listening | Not implemented — shows "Coming Soon" |
-| Speaking | Not implemented — shows "Coming Soon" |
-
-See [`FUTURE_WORK.md`](FUTURE_WORK.md) (untracked, local reference only) for what's left before those two sections and the rest of the production hardening are done.
-
 ## Features
 
-- **Writing Section**: Task 1 (chart description) and Task 2 (essay), with AI-generated prompts and detailed band-score feedback across all four IELTS writing criteria
-- **Reading Section**: AI-generated academic passages with multiple question types (multiple choice, true/false/not given, short answer, matching headings)
-- **AI Evaluation**: Band scores and actionable feedback powered by Gemini
-- **Dark mode** and **responsive design**
-- **Mock mode in development** — `npm run dev` uses local mock data instead of calling the Gemini API, so no API key is needed just to work on the UI
+All four IELTS skills are implemented, plus a progress dashboard:
+
+- **Listening**: AI-generated test sections played as audio (text-to-speech) with exam-style once-through playback. The transcript stays hidden until you submit. Answers are scored deterministically against the answer key with per-question explanations that quote the transcript, and analytics show which listening skills you keep missing (numbers, dates, names, directions…).
+- **Reading**: Three AI-generated academic passages with realistic question types (multiple choice, true/false/not given, short answer, matching headings). Select any word in a passage for an instant dictionary definition. Results include performance-by-question-type analytics and explanations referencing the passage.
+- **Writing**: Task 1 (chart description) and Task 2 (essay) with band scores across the four official criteria, sentence-level corrections from your own writing with explanations, and band 8.5+ model answers for comparison. Drafts autosave — a refresh never loses your essay.
+- **Speaking**: A full three-part test with a 1-minute preparation timer and 2-minute speaking limit for the Part 2 cue card, exactly like the exam. Answers are recorded (replayable) and transcribed live; you get band scores for all four speaking criteria, corrections from your actual words, and pace/filler-word analysis. When possible, pronunciation is assessed from your real Part 2 recording.
+- **Dashboard**: Practice streak, daily goal, per-module band averages and trends, aggregated focus areas across your history, and full review of past sessions. All stored locally in your browser — nothing leaves your device except the AI evaluation calls.
+- **Production UX**: deterministic Listening/Reading band conversion (no LLM guessing at objective scores), retry on AI failures, error boundaries, autosaved in-progress tests, dark mode, responsive layout.
+- **Mock mode in development** — `npm run dev` uses local mock data instead of calling the Gemini API, so no API key is needed just to work on the UI.
+
+See [`FUTURE_WORK.md`](FUTURE_WORK.md) (untracked, local reference only) for the remaining production-hardening backlog.
 
 ## Tech Stack
 
@@ -28,7 +23,8 @@ See [`FUTURE_WORK.md`](FUTURE_WORK.md) (untracked, local reference only) for wha
 - Tailwind CSS 4 (compiled at build time via `@tailwindcss/vite`, not the CDN build)
 - Google Gemini API (`@google/genai`), called only from serverless functions
 - Vercel serverless functions (`@vercel/node`)
-- Web Speech API (used by the in-progress Speaking section)
+- Web Speech APIs: SpeechSynthesis for listening audio, SpeechRecognition + MediaRecorder for speaking practice
+- localStorage for progress history, streaks, and draft autosave (no accounts/backend)
 
 ## Project Structure
 
@@ -37,19 +33,27 @@ See [`FUTURE_WORK.md`](FUTURE_WORK.md) (untracked, local reference only) for wha
 │   ├── generate.ts          # Generates test content for a given section
 │   └── evaluate.ts          # Evaluates submitted answers and returns band scores
 ├── src/
-│   ├── components/          # React components
-│   ├── hooks/                # Custom React hooks (e.g. useSpeechToText)
+│   ├── components/          # React components (sections, dashboard, shared UI)
+│   ├── hooks/                # useSpeechSynthesis (TTS playback), useAudioRecorder (mic + transcription)
 │   ├── services/
 │   │   ├── apiService.ts    # Calls /api/* in production, mockService in dev
-│   │   └── mockService.ts   # Local mock data used during `npm run dev`
+│   │   ├── mockService.ts   # Local mock data used during `npm run dev`
+│   │   ├── scoringService.ts # Deterministic scoring + IELTS band conversion + analytics
+│   │   └── progressService.ts # localStorage history, streaks, and draft autosave
 │   ├── styles/               # Tailwind entry point + custom animations
 │   ├── types/                # Shared TypeScript types
 │   ├── App.tsx
 │   └── main.tsx
 ├── index.html
+├── vercel.json              # Serverless function timeouts
 ├── vite.config.ts
 └── tsconfig.json
 ```
+
+## How scoring works
+
+- **Listening & Reading** are scored locally against the AI-generated answer key, then converted to an estimated band using the official IELTS raw-score conversion table. No AI call is made to grade objective answers — it's instant, free, and more accurate than asking a model to guess.
+- **Writing & Speaking** are evaluated by Gemini against the official IELTS band descriptors, criterion by criterion, with the strict-examiner prompt asking for realistic (not inflated) scores.
 
 ## Setup
 

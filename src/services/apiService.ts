@@ -4,7 +4,9 @@ import {
   SpeakingContent,
   WritingContent,
   WritingEvaluation,
-  GeneralEvaluation,
+  SpeakingEvaluation,
+  SpeakingMetrics,
+  PronunciationFeedback,
 } from "../types";
 
 // Import mock service for local development
@@ -78,18 +80,34 @@ export async function evaluateWriting(
   });
 }
 
-export async function evaluateGeneral(
-  section: "Reading" | "Listening" | "Speaking",
-  originalContent: any,
-  userAnswers: any
-): Promise<GeneralEvaluation> {
+export async function evaluateSpeaking(
+  content: SpeakingContent,
+  answers: any,
+  metrics: SpeakingMetrics
+): Promise<SpeakingEvaluation> {
   if (USE_MOCK_DATA) {
-    return mockService.evaluateGeneral();
+    return mockService.evaluateSpeaking();
   }
-  return apiCall<GeneralEvaluation>("evaluate", {
-    evaluationType: "general",
-    section,
-    content: originalContent,
-    answers: userAnswers,
+  return apiCall<SpeakingEvaluation>("evaluate", {
+    evaluationType: "speaking",
+    content,
+    answers,
+    metrics,
+  });
+}
+
+export async function evaluatePronunciation(
+  audioBase64: string,
+  mimeType: string,
+  cueCard?: string
+): Promise<PronunciationFeedback> {
+  if (USE_MOCK_DATA) {
+    return mockService.evaluatePronunciation();
+  }
+  return apiCall<PronunciationFeedback>("evaluate", {
+    evaluationType: "pronunciation",
+    audio: audioBase64,
+    mimeType,
+    cueCard,
   });
 }

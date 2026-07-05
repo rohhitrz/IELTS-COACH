@@ -1,35 +1,19 @@
 import React, { useState } from 'react';
 import BaseSection from './BaseSection';
-import { generateReadingTest, evaluateGeneral } from '../services/apiService';
-import { ReadingContent, Question } from '../types';
+import QuestionInput from './QuestionInput';
+import WordLookup from './WordLookup';
+import { generateReadingTest } from '../services/apiService';
+import { scoreObjectiveTest } from '../services/scoringService';
+import { ReadingContent } from '../types';
 
 type Answers = { [key: string]: string };
-
-const renderQuestion = (q: Question, answer: string | undefined, onChange: (id: string, value: string) => void) => {
-    return (
-        <div key={q.id} className="mb-4 p-4 bg-slate-50 dark:bg-slate-700/50 rounded-md border border-slate-200 dark:border-slate-700">
-            <label htmlFor={q.id} className="block font-medium text-slate-700 dark:text-slate-300 mb-2">{q.question}</label>
-            {q.type === 'multiple_choice' && q.options ? (
-                 <select id={q.id} value={answer ?? ''} onChange={(e) => onChange(q.id, e.target.value)} className="w-full p-2 border rounded-md bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600">
-                     <option value="">Select an answer</option>
-                      {/* Defensive check: ensure options is an array, filter out any null/undefined values, and cast each option value to a string before mapping */}
-                     {Array.isArray(q.options) && q.options.filter(opt => opt !== null && opt !== undefined).map((opt, i) => {
-                        const optionValue = String(opt);
-                        return <option key={i} value={optionValue}>{optionValue}</option>;
-                     })}
-                 </select>
-            ) : (
-                <input type="text" id={q.id} value={answer ?? ''} onChange={(e) => onChange(q.id, e.target.value)} className="w-full p-2 border rounded-md bg-white dark:bg-slate-700 border-slate-300 dark:border-slate-600" />
-            )}
-        </div>
-    );
-}
 
 const ReadingTestRenderer: React.FC<{
     content: ReadingContent,
     answers: Answers,
-    setAnswers: React.Dispatch<React.SetStateAction<Answers>>
-}> = ({ content, answers, setAnswers }) => {
+    setAnswers: React.Dispatch<React.SetStateAction<Answers>>,
+    isSubmitted: boolean
+}> = ({ content, answers, setAnswers, isSubmitted }) => {
     const [activePassageIndex, setActivePassageIndex] = useState(0);
 
     if (!content.passages || content.passages.length === 0) {
@@ -59,14 +43,27 @@ const ReadingTestRenderer: React.FC<{
                 ))}
             </div>
 
-            <h3 className="text-xl font-bold mb-4 text-slate-800 dark:text-slate-100">{currentPassage.title}</h3>
+            <h3 className="text-xl font-bold mb-1 text-slate-800 dark:text-slate-100">{currentPassage.title}</h3>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
+                Tip: select any word in the passage to look up its meaning.
+            </p>
             <div className="lg:grid lg:grid-cols-2 lg:gap-8">
-                <div className="prose prose-slate dark:prose-invert max-w-none bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-700 rounded-lg lg:max-h-[60vh] overflow-y-auto mb-6 lg:mb-0">
-                    {currentPassage.passage.split('\n').map((para, i) => <p key={i} className="mb-4">{para}</p>)}
-                </div>
+                <WordLookup>
+                    <div className="prose prose-slate dark:prose-invert max-w-none bg-slate-50 dark:bg-slate-900/50 p-4 border border-slate-200 dark:border-slate-700 rounded-lg lg:max-h-[60vh] overflow-y-auto mb-6 lg:mb-0">
+                        {currentPassage.passage.split('\n').map((para, i) => <p key={i} className="mb-4">{para}</p>)}
+                    </div>
+                </WordLookup>
                 <div className="lg:max-h-[60vh] overflow-y-auto p-1">
                     <h4 className="text-lg font-semibold mb-4 text-slate-800 dark:text-slate-200">Questions</h4>
-                    {currentPassage.questions.map(q => renderQuestion(q, answers[q.id], handleAnswerChange))}
+                    {currentPassage.questions.map(q => (
+                        <QuestionInput
+                            key={q.id}
+                            question={q}
+                            value={answers[q.id] ?? ''}
+                            onChange={handleAnswerChange}
+                            disabled={isSubmitted}
+                        />
+                    ))}
                 </div>
             </div>
         </div>
@@ -79,11 +76,13 @@ const ReadingSection: React.FC = () => {
         <BaseSection<ReadingContent, Answers>
             sectionTitle="Reading"
             generateTest={generateReadingTest}
-            evaluateAnswers={(content, answers) => evaluateGeneral('Reading', content, answers)}
+            evaluateAnswers={async (content, answers) =>
+                scoreObjectiveTest(content.passages.flatMap(p => p.questions), answers, 'type')
+            }
             initialAnswers={{}}
             duration={3600} // 60 minutes
-            renderTest={(content, answers, setAnswers) => (
-                <ReadingTestRenderer content={content} answers={answers} setAnswers={setAnswers} />
+            renderTest={(content, answers, setAnswers, isSubmitted) => (
+                <ReadingTestRenderer content={content} answers={answers} setAnswers={setAnswers} isSubmitted={isSubmitted} />
             )}
         />
     );

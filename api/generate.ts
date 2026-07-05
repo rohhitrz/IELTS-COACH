@@ -3,16 +3,31 @@ import { GoogleGenAI, Type } from "@google/genai";
 
 const apiKey = process.env.GEMINI_API_KEY;
 
-const questionSchema = {
+const readingQuestionSchema = {
     type: Type.OBJECT,
     properties: {
         id: { type: Type.STRING },
         question: { type: Type.STRING },
         type: { type: Type.STRING, enum: ['multiple_choice', 'short_answer', 'true_false_not_given', 'matching_headings'] },
-        options: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true },
-        answer: { type: Type.STRING, description: "The correct answer for the question." }
+        options: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true, description: "Required for multiple_choice and matching_headings. Omit for true_false_not_given and short_answer." },
+        answer: { type: Type.STRING, description: "The correct answer. For multiple_choice/matching_headings it must exactly match one of the options. For true_false_not_given it must be exactly 'True', 'False', or 'Not Given'." },
+        explanation: { type: Type.STRING, description: "Why this answer is correct, quoting or referencing the specific part of the passage that supports it." }
     },
-    required: ['id', 'question', 'type', 'answer']
+    required: ['id', 'question', 'type', 'answer', 'explanation']
+};
+
+const listeningQuestionSchema = {
+    type: Type.OBJECT,
+    properties: {
+        id: { type: Type.STRING },
+        question: { type: Type.STRING },
+        type: { type: Type.STRING, enum: ['multiple_choice', 'short_answer', 'sentence_completion'] },
+        options: { type: Type.ARRAY, items: { type: Type.STRING }, nullable: true, description: "Required for multiple_choice only." },
+        answer: { type: Type.STRING, description: "The correct answer. For multiple_choice it must exactly match one of the options. For short_answer/sentence_completion keep it to 1-3 words as in the real exam." },
+        explanation: { type: Type.STRING, description: "Why this answer is correct, quoting the relevant moment in the transcript." },
+        category: { type: Type.STRING, enum: ['number', 'date_time', 'name_spelling', 'place_direction', 'detail', 'main_idea'], description: "The listening skill this question tests, used for weakness analytics." }
+    },
+    required: ['id', 'question', 'type', 'answer', 'explanation', 'category']
 };
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -39,7 +54,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'listening':
                 response = await ai.models.generateContent({
                     model: "gemini-2.5-flash",
-                    contents: "Generate a complete IELTS Academic Listening test section. Include a scenario description, a full transcript, and 5-7 questions of various types (multiple choice, short answer). Provide correct answers for each question.",
+                    contents: `Generate one section of an IELTS Academic Listening test.
+
+Requirements:
+- A brief scenario description (e.g. "A student phones an accommodation office about renting a room").
+- A realistic spoken transcript of 500-700 words. Write it as natural speech (a dialogue with speaker names like "Agent:" and "Student:", or a monologue), including the specific facts the questions test: numbers, prices, dates, times, spelled-out names, addresses, and directions, exactly as they would be spoken.
+- Exactly 10 questions in transcript order, mixing multiple_choice, short_answer, and sentence_completion.
+- Answers must be findable in the transcript. Short answers must be 1-3 words.
+- Each question gets an explanation quoting the moment in the transcript that gives the answer, and a category describing the listening skill tested (number, date_time, name_spelling, place_direction, detail, main_idea). Use a varied mix of categories.`,
                     config: {
                         responseMimeType: "application/json",
                         responseSchema: {
@@ -47,7 +69,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                             properties: {
                                 scenario: { type: Type.STRING, description: "A brief description of the listening context." },
                                 transcript: { type: Type.STRING, description: "The full transcript of the audio." },
-                                questions: { type: Type.ARRAY, items: questionSchema }
+                                questions: { type: Type.ARRAY, items: listeningQuestionSchema }
                             },
                             required: ['scenario', 'transcript', 'questions']
                         }
@@ -59,7 +81,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             case 'reading':
                 response = await ai.models.generateContent({
                     model: "gemini-2.5-flash",
-                    contents: "Generate a complete IELTS Academic Reading test with 3 passages and a total of 40 questions. The passages should be on distinct academic topics, each approximately 700-800 words. Distribute the 40 questions across the three passages (e.g., 13, 13, 14 questions). The question types should be varied (e.g., multiple choice, true/false/not given, short answer, matching headings). Provide correct answers for all questions. Ensure question IDs are unique across all passages.",
+                    contents: `Generate a complete IELTS Academic Reading test with 3 passages and a total of 40 questions.
+
+Requirements:
+- Passages on distinct academic topics, each approximately 700-800 words.
+- Distribute the 40 questions across the three passages (e.g. 13, 13, 14). Question IDs must be unique across all passages.
+- Vary the question types: multiple_choice (provide 4 options), true_false_not_given (answer exactly 'True', 'False', or 'Not Given'), short_answer (1-3 word answers), and matching_headings (provide the list of headings as options).
+- Every question gets an explanation that quotes or references the specific sentence(s) in the passage supporting the answer, so a student can learn from mistakes.`,
                     config: {
                         responseMimeType: "application/json",
                         responseSchema: {
@@ -72,7 +100,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
                                        properties: {
                                            title: { type: Type.STRING },
                                            passage: { type: Type.STRING },
-                                           questions: { type: Type.ARRAY, items: questionSchema }
+                                           questions: { type: Type.ARRAY, items: readingQuestionSchema }
                                        },
                                        required: ['title', 'passage', 'questions']
                                    }

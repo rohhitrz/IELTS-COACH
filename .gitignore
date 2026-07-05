@@ -27,3 +27,6 @@ dist-ssr
 
 # Personal reference notes, not for upstream
 FUTURE_WORK.md
+
+# Local agent/editor tooling
+.claude/

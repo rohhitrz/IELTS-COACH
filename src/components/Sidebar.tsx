@@ -1,6 +1,6 @@
 import React from 'react';
 import { ExamSection } from '../types';
-import { ListeningIcon, ReadingIcon, SpeakingIcon, WritingIcon, HomeIcon, XIcon, SparklesIcon } from './IconComponents';
+import { ListeningIcon, ReadingIcon, SpeakingIcon, WritingIcon, HomeIcon, XIcon, SparklesIcon, ChartBarIcon } from './IconComponents';
 
 interface SidebarProps {
   activeSection: ExamSection;
@@ -12,6 +12,7 @@ interface SidebarProps {
 const Sidebar: React.FC<SidebarProps> = ({ activeSection, onSectionChange, isOpen, setIsOpen }) => {
   const navItems = [
     { id: ExamSection.WELCOME, icon: HomeIcon, label: 'Home' },
+    { id: ExamSection.DASHBOARD, icon: ChartBarIcon, label: 'Dashboard' },
     { id: ExamSection.LISTENING, icon: ListeningIcon, label: 'Listening' },
     { id: ExamSection.READING, icon: ReadingIcon, label: 'Reading' },
     { id: ExamSection.WRITING, icon: WritingIcon, label: 'Writing' },

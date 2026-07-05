@@ -23,7 +23,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       task2Answer,
     } = req.body;
 
-    if (!evaluationType || !["writing", "general"].includes(evaluationType)) {
+    if (!evaluationType || !["writing", "speaking", "pronunciation"].includes(evaluationType)) {
       return res.status(400).json({ error: "Invalid evaluation type" });
     }
 
@@ -103,7 +103,11 @@ Task 2: Check if candidate:
 - If response is off-topic, irrelevant, or too short = Band 4 or below
 - Consider if a native speaker would struggle to understand = lower band
 
-Provide honest, detailed feedback that helps improvement.`;
+Provide honest, detailed feedback that helps improvement.
+
+Additionally:
+- Select the 5-8 weakest sentences from the candidate's answers. For each, quote the original sentence exactly, rewrite it as a band 8+ writer would, and explain in one or two sentences WHY the change improves it (name the grammar rule, collocation, or cohesion principle involved). Categorize each as grammar, vocabulary, style, or coherence.
+- Write complete model answers for both tasks at band 8.5-9 level: Task 1 around 170-190 words responding to the actual chart/prompt given, Task 2 around 270-300 words responding to the actual essay question given. These are for the student to compare against their own writing.`;
 
       response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -199,6 +203,48 @@ Provide honest, detailed feedback that helps improvement.`;
                 description:
                   "Count and categorize major errors (grammar, spelling, vocabulary) and their impact",
               },
+              sentenceSuggestions: {
+                type: Type.ARRAY,
+                description:
+                  "5-8 sentence-level corrections taken from the candidate's actual writing",
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    original: {
+                      type: Type.STRING,
+                      description: "The candidate's exact original sentence",
+                    },
+                    improved: {
+                      type: Type.STRING,
+                      description: "The sentence rewritten at band 8+ level",
+                    },
+                    explanation: {
+                      type: Type.STRING,
+                      description:
+                        "Why the change improves the sentence (grammar rule, collocation, cohesion principle)",
+                    },
+                    category: {
+                      type: Type.STRING,
+                      enum: ["grammar", "vocabulary", "style", "coherence"],
+                    },
+                  },
+                  required: ["original", "improved", "explanation", "category"],
+                },
+              },
+              modelAnswers: {
+                type: Type.OBJECT,
+                properties: {
+                  task1: {
+                    type: Type.STRING,
+                    description: "Band 8.5-9 model answer for Task 1 (170-190 words)",
+                  },
+                  task2: {
+                    type: Type.STRING,
+                    description: "Band 8.5-9 model answer for Task 2 (270-300 words)",
+                  },
+                },
+                required: ["task1", "task2"],
+              },
             },
             required: [
               "taskResponse",
@@ -210,38 +256,53 @@ Provide honest, detailed feedback that helps improvement.`;
               "areasForImprovement",
               "wordCountAnalysis",
               "errorAnalysis",
+              "sentenceSuggestions",
+              "modelAnswers",
             ],
           },
         },
       });
 
       result = JSON.parse(response.text);
-    } else if (evaluationType === "general") {
-      const { section } = req.body;
-
-      if (!section || !["Reading", "Listening", "Speaking"].includes(section)) {
-        return res
-          .status(400)
-          .json({ error: "Invalid section for general evaluation" });
-      }
+    } else if (evaluationType === "speaking") {
+      const { metrics } = req.body;
 
       if (!content || !answers) {
         return res
           .status(400)
-          .json({ error: "Missing content or answers for general evaluation" });
+          .json({ error: "Missing content or answers for speaking evaluation" });
       }
 
+      const criterionProps = {
+        band: { type: Type.NUMBER, description: "Band score 1-9" },
+        feedback: { type: Type.STRING, description: "Detailed, specific feedback" },
+      };
+
       const prompt = `
-              You are an expert IELTS examiner. Evaluate the following ${section} test answers.
+You are a strict IELTS Speaking examiner with 15+ years of experience. Evaluate this candidate's Speaking test using the official IELTS Speaking band descriptors. Be rigorous and realistic - most candidates score between 5.0-7.0.
 
-              **Original Test Content:**
-              ${JSON.stringify(content)}
+The candidate's spoken responses were captured with speech-to-text, so ignore missing punctuation/capitalization, but DO treat the transcripts as faithful records of the words spoken.
 
-              **Student's Answers:**
-              ${JSON.stringify(answers)}
+**TEST QUESTIONS (all three parts):**
+${JSON.stringify(content)}
 
-              Provide an estimated band score, overall feedback, key strengths, and areas for improvement. For Reading/Listening, compare user answers to the correct ones. For Speaking, evaluate the substance and quality of the text-based responses.
-            `;
+**CANDIDATE'S TRANSCRIBED RESPONSES:**
+${JSON.stringify(answers)}
+
+**DELIVERY METRICS (measured from the recordings):**
+${JSON.stringify(metrics || {})}
+For reference: natural English conversation runs roughly 130-170 words per minute. Well below that suggests hesitation; far above may indicate rushed, unclear speech. Note that speech-to-text often filters out "um"/"uh", so the true filler count is likely higher than measured.
+
+Evaluate each criterion strictly:
+- **Fluency and Coherence**: response length and development, use of the metrics above, discourse markers, topic development, whether Part 2 was sustained as a long turn.
+- **Lexical Resource**: range, idiomatic language, paraphrase ability, precision of word choice.
+- **Grammatical Range and Accuracy**: sentence variety, error frequency and types (visible in the transcript).
+- **Pronunciation**: you cannot hear the audio, so give a provisional estimate from what the transcript suggests (word choice complexity, any transcription artifacts) and state clearly in the feedback that this is an estimate not based on audio.
+
+Also provide:
+- 4-6 corrections quoting the candidate's exact words, with the improved version and why it's better.
+- A short analysis of their speaking pace and filler-word usage based on the metrics.
+- Honest strengths and specific, actionable areas for improvement.`;
 
       response = await ai.models.generateContent({
         model: "gemini-2.5-flash",
@@ -251,17 +312,78 @@ Provide honest, detailed feedback that helps improvement.`;
           responseSchema: {
             type: Type.OBJECT,
             properties: {
-              estimatedBand: { type: Type.NUMBER },
-              feedback: { type: Type.STRING },
+              fluencyAndCoherence: { type: Type.OBJECT, properties: criterionProps, required: ["band", "feedback"] },
+              lexicalResource: { type: Type.OBJECT, properties: criterionProps, required: ["band", "feedback"] },
+              grammaticalRangeAndAccuracy: { type: Type.OBJECT, properties: criterionProps, required: ["band", "feedback"] },
+              pronunciation: { type: Type.OBJECT, properties: criterionProps, required: ["band", "feedback"] },
+              overallBandScore: { type: Type.NUMBER, description: "Overall band 1-9, average of the four criteria rounded to nearest 0.5" },
               strengths: { type: Type.STRING },
               areasForImprovement: { type: Type.STRING },
+              corrections: {
+                type: Type.ARRAY,
+                items: {
+                  type: Type.OBJECT,
+                  properties: {
+                    original: { type: Type.STRING, description: "The candidate's exact words" },
+                    improved: { type: Type.STRING },
+                    explanation: { type: Type.STRING },
+                    category: { type: Type.STRING, enum: ["grammar", "vocabulary", "style", "coherence"] },
+                  },
+                  required: ["original", "improved", "explanation", "category"],
+                },
+              },
+              paceAnalysis: { type: Type.STRING, description: "Analysis of speaking pace and filler words based on the metrics" },
             },
             required: [
-              "estimatedBand",
-              "feedback",
+              "fluencyAndCoherence",
+              "lexicalResource",
+              "grammaticalRangeAndAccuracy",
+              "pronunciation",
+              "overallBandScore",
               "strengths",
               "areasForImprovement",
+              "corrections",
+              "paceAnalysis",
             ],
+          },
+        },
+      });
+
+      result = JSON.parse(response.text);
+    } else if (evaluationType === "pronunciation") {
+      const { audio, mimeType, cueCard } = req.body;
+
+      if (!audio || !mimeType) {
+        return res.status(400).json({ error: "Missing audio for pronunciation analysis" });
+      }
+      // Inline base64 payload cap; Vercel rejects bodies over ~4.5MB anyway.
+      if (typeof audio !== "string" || audio.length > 4_000_000) {
+        return res.status(400).json({ error: "Audio recording too large to analyze" });
+      }
+
+      response = await ai.models.generateContent({
+        model: "gemini-2.5-flash",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { inlineData: { mimeType, data: audio } },
+              {
+                text: `This is a recording of an IELTS Speaking Part 2 long turn${cueCard ? ` on the topic: "${cueCard}"` : ""}. You are an IELTS examiner assessing PRONUNCIATION only, per the official band descriptors: individual sounds, word stress, sentence stress, intonation, chunking, and overall intelligibility. Give a band score 1-9, detailed feedback, and 2-5 specific examples of words or phrases from the recording that were mispronounced, unclear, or well delivered (quote them).`,
+              },
+            ],
+          },
+        ],
+        config: {
+          responseMimeType: "application/json",
+          responseSchema: {
+            type: Type.OBJECT,
+            properties: {
+              band: { type: Type.NUMBER, description: "Pronunciation band score 1-9" },
+              feedback: { type: Type.STRING },
+              examples: { type: Type.ARRAY, items: { type: Type.STRING } },
+            },
+            required: ["band", "feedback", "examples"],
           },
         },
       });

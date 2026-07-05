@@ -1,5 +1,7 @@
-import React, { useState, useCallback, useEffect } from "react";
-import { ExamContent, EvaluationResult } from "../types";
+import React, { useState, useCallback, useEffect, useRef } from "react";
+import { ExamContent, EvaluationResult, Attempt } from "../types";
+import { saveAttempt, bandOf } from "../services/progressService";
+import { saveDraft, loadDraft, clearDraft, Draft } from "../services/progressService";
 import LoadingSpinner from "./LoadingSpinner";
 import EvaluationDisplay from "./EvaluationDisplay";
 import Timer from "./Timer";
@@ -16,13 +18,14 @@ import {
 } from "./IconComponents";
 
 interface BaseSectionProps<C extends ExamContent, A> {
-  sectionTitle: string;
+  sectionTitle: Attempt['section'];
   generateTest: () => Promise<C>;
   evaluateAnswers: (content: C, answers: A) => Promise<EvaluationResult>;
   renderTest: (
     content: C,
     answers: A,
-    handleAnswerChange: React.Dispatch<React.SetStateAction<A>>
+    handleAnswerChange: React.Dispatch<React.SetStateAction<A>>,
+    isSubmitted: boolean
   ) => React.ReactNode;
   initialAnswers: A;
   duration: number; // Duration in seconds
@@ -36,29 +39,40 @@ const BaseSection = <C extends ExamContent, A>({
   initialAnswers,
   duration,
 }: BaseSectionProps<C, A>) => {
-  const [content, setContent] = useState<C | null>(null);
-  const [answers, setAnswers] = useState<A>(initialAnswers);
+  // Restore an in-progress draft (e.g. a half-written essay) if one was autosaved.
+  const restoredDraft = useRef<Draft<C, A> | null | undefined>(undefined);
+  if (restoredDraft.current === undefined) {
+    restoredDraft.current = loadDraft<C, A>(sectionTitle);
+  }
+
+  const [content, setContent] = useState<C | null>(restoredDraft.current?.content ?? null);
+  const [answers, setAnswers] = useState<A>(restoredDraft.current?.answers ?? initialAnswers);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEvaluating, setIsEvaluating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [failedAction, setFailedAction] = useState<'generate' | 'evaluate' | null>(null);
   const [showConfetti, setShowConfetti] = useState(false);
   const [testProgress, setTestProgress] = useState(0);
   const [timeSpent, setTimeSpent] = useState(0);
+  const startedAtRef = useRef<number>(restoredDraft.current?.startedAt ?? Date.now());
 
   const handleGenerateTest = useCallback(async () => {
     setIsLoading(true);
     setError(null);
+    setFailedAction(null);
     setEvaluation(null);
     setContent(null);
     setAnswers(initialAnswers);
     try {
       const testContent = await generateTest();
+      startedAtRef.current = Date.now();
       setContent(testContent);
     } catch (err) {
       setError(
-        "Failed to generate the test. Please check your API key and try again."
+        "Failed to generate the test. This is usually a temporary issue with the AI service."
       );
+      setFailedAction('generate');
       console.error(err);
     } finally {
       setIsLoading(false);
@@ -69,35 +83,52 @@ const BaseSection = <C extends ExamContent, A>({
     if (!content || isEvaluating) return;
     setIsEvaluating(true);
     setError(null);
+    setFailedAction(null);
     setEvaluation(null);
     try {
       const result = await evaluateAnswers(content, answers);
       setEvaluation(result);
+      clearDraft(sectionTitle);
+      saveAttempt(sectionTitle, result);
 
       // Show confetti for good scores
-      const score =
-        "overallBandScore" in result
-          ? result.overallBandScore
-          : result.estimatedBand;
-      if (score >= 7) {
+      if (bandOf(result) >= 7) {
         setShowConfetti(true);
       }
     } catch (err) {
-      setError("Failed to evaluate your answers. Please try again.");
+      setError("Failed to evaluate your answers. Your work is still here — you can retry.");
+      setFailedAction('evaluate');
       console.error(err);
     } finally {
       setIsEvaluating(false);
     }
-  }, [content, answers, evaluateAnswers, isEvaluating]);
+  }, [content, answers, evaluateAnswers, isEvaluating, sectionTitle]);
+
+  // Autosave the in-progress test so a refresh or crash never loses work.
+  useEffect(() => {
+    if (content && !evaluation) {
+      saveDraft(sectionTitle, content, answers, startedAtRef.current);
+    }
+  }, [content, answers, evaluation, sectionTitle]);
 
   const startNewTest = () => {
+    clearDraft(sectionTitle);
     setContent(null);
     setEvaluation(null);
     setError(null);
+    setFailedAction(null);
     setAnswers(initialAnswers);
     setShowConfetti(false);
     setTestProgress(0);
     setTimeSpent(0);
+  };
+
+  const handleRetry = () => {
+    if (failedAction === 'evaluate') {
+      handleSubmit();
+    } else {
+      handleGenerateTest();
+    }
   };
 
   // Calculate test progress based on answers
@@ -183,9 +214,20 @@ const BaseSection = <C extends ExamContent, A>({
       {/* Error Display */}
       {error && (
         <AnimatedCard className="p-4 bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800">
-          <div className="flex items-center space-x-2 text-red-700 dark:text-red-300">
-            <InfoIcon className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
+          <div className="flex items-center justify-between gap-4">
+            <div className="flex items-center space-x-2 text-red-700 dark:text-red-300">
+              <InfoIcon className="w-5 h-5 flex-shrink-0" />
+              <span>{error}</span>
+            </div>
+            {failedAction && (
+              <button
+                onClick={handleRetry}
+                className="flex-shrink-0 inline-flex items-center px-4 py-2 bg-red-600 hover:bg-red-700 text-white text-sm font-semibold rounded-lg transition-colors"
+              >
+                <RefreshIcon className="w-4 h-4 mr-2" />
+                Retry
+              </button>
+            )}
           </div>
         </AnimatedCard>
       )}
@@ -224,7 +266,7 @@ const BaseSection = <C extends ExamContent, A>({
             isPaused={isEvaluating || !!evaluation}
           />
           <div className="p-4 sm:p-6 space-y-8">
-            {renderTest(content, answers, setAnswers)}
+            {renderTest(content, answers, setAnswers, !!evaluation)}
 
             {!evaluation && !isEvaluating && (
               <div className="flex justify-between items-center pt-6 border-t border-slate-200 dark:border-slate-700">

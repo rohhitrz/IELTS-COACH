@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { ExamSection } from './types';
 import Sidebar from './components/Sidebar';
 import WelcomeScreen from './components/WelcomeScreen';
+import Dashboard from './components/Dashboard';
 import ReadingSection from './components/ReadingSection';
 import WritingSection from './components/WritingSection';
 import SpeakingSection from './components/SpeakingSection';
 import ListeningSection from './components/ListeningSection';
+import ErrorBoundary from './components/ErrorBoundary';
 import { MoonIcon, SunIcon, MenuIcon } from './components/IconComponents';
 import './styles/animations.css';
 
@@ -37,6 +39,8 @@ const App: React.FC = () => {
     switch (activeSection) {
       case ExamSection.WELCOME:
         return <WelcomeScreen />;
+      case ExamSection.DASHBOARD:
+        return <Dashboard onNavigate={handleSectionChange} />;
       case ExamSection.LISTENING:
         return <ListeningSection />;
       case ExamSection.READING:
@@ -76,7 +80,9 @@ const App: React.FC = () => {
         </header>
         <div className="flex-1 p-4 sm:p-6 md:p-8">
             <div className="max-w-4xl mx-auto">
-              {renderSection()}
+              <ErrorBoundary resetKey={activeSection}>
+                {renderSection()}
+              </ErrorBoundary>
             </div>
         </div>
       </main>
