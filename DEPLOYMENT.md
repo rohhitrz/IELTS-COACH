@@ -46,10 +46,9 @@ After deployment:
 ✅ API key stored server-side only  
 ✅ No sensitive data in client bundle  
 ✅ All AI operations through secure endpoints  
-✅ CORS protection via Vercel functions  
+✅ No cross-origin access — the API endpoints don't set `Access-Control-Allow-Origin`, so browsers block requests from any origin other than the deployed app itself  
 
 ### Troubleshooting
 
 - **API errors**: Check Vercel function logs for environment variable issues
-- **Build failures**: Ensure all dependencies are correctly specified in `api/package.json`
-- **CORS issues**: API functions automatically handle CORS for same-origin requests
+- **Build failures**: Ensure all dependencies are correctly specified in the root `package.json`

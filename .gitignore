@@ -24,3 +24,6 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Personal reference notes, not for upstream
+FUTURE_WORK.md
