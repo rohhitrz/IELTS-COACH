@@ -7,6 +7,22 @@
   --font-sans: 'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
 }
 
+/*
+ * Dark mode palette: the app uses Tailwind's `slate-*` scale for every
+ * dark:bg/text/border-slate-* class, so overriding these variables here
+ * re-themes the whole app to a neutral near-black background with white
+ * text, without touching every component individually.
+ */
+.dark {
+  --color-slate-900: #141414; /* page background */
+  --color-slate-800: #1e1e1e; /* card / raised surface background */
+  --color-slate-700: #2a2a2a; /* hover states, nested surfaces, borders */
+  --color-slate-600: #3a3a3a; /* lighter borders / hover accents */
+  --color-slate-100: #ffffff; /* headings */
+  --color-slate-200: #ffffff; /* primary body text */
+  --color-slate-300: #ffffff; /* secondary body text */
+}
+
 /* Base polish: smoother font rendering and consistent focus rings */
 @layer base {
   body {
