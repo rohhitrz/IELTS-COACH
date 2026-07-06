@@ -75,7 +75,7 @@ const Timer: React.FC<TimerProps> = ({ duration, onSubmit, isPaused }) => {
   const colors = colorClasses[getTimerColor()];
 
   return (
-    <div className={`sticky top-[81px] md:top-[89px] z-10 mx-4 sm:mx-6 mb-4 p-4 rounded-xl border transition-all duration-300 ${colors.bg} ${colors.border} ${isCriticalTime ? 'animate-pulse' : ''}`}>
+    <div className={`sticky top-[64px] z-10 mx-4 sm:mx-6 mb-4 p-4 rounded-xl border transition-all duration-300 ${colors.bg} ${colors.border} ${isCriticalTime ? 'animate-pulse' : ''}`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3">
           <div className={`p-2 rounded-lg ${colors.bg}`}>

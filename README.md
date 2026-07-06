@@ -4,17 +4,33 @@ An AI-powered IELTS Academic test preparation app. It generates practice tests a
 
 ## Features
 
-All four IELTS skills are implemented, plus a progress dashboard:
+All four IELTS skills are implemented, plus full-length mock tests and a progress dashboard:
 
+- **Mock tests**: Full four-section IELTS Academic practice tests (4-part / 40-question Listening, 3-passage / 40-question Reading, Task 1 + Task 2 Writing, three-part Speaking), each on a distinct theme. Take sections in any order, retake them freely, and see a per-section band plus an overall band score rounded the official IELTS way. Two tests are hand-authored and shipped; tests 3–10 are produced by the generator script (see below).
 - **Listening**: AI-generated test sections played as audio (text-to-speech) with exam-style once-through playback. The transcript stays hidden until you submit. Answers are scored deterministically against the answer key with per-question explanations that quote the transcript, and analytics show which listening skills you keep missing (numbers, dates, names, directions…).
 - **Reading**: Three AI-generated academic passages with realistic question types (multiple choice, true/false/not given, short answer, matching headings). Select any word in a passage for an instant dictionary definition. Results include performance-by-question-type analytics and explanations referencing the passage.
 - **Writing**: Task 1 (chart description) and Task 2 (essay) with band scores across the four official criteria, sentence-level corrections from your own writing with explanations, and band 8.5+ model answers for comparison. Drafts autosave — a refresh never loses your essay.
 - **Speaking**: A full three-part test with a 1-minute preparation timer and 2-minute speaking limit for the Part 2 cue card, exactly like the exam. Answers are recorded (replayable) and transcribed live; you get band scores for all four speaking criteria, corrections from your actual words, and pace/filler-word analysis. When possible, pronunciation is assessed from your real Part 2 recording.
 - **Dashboard**: Practice streak, daily goal, per-module band averages and trends, aggregated focus areas across your history, and full review of past sessions. All stored locally in your browser — nothing leaves your device except the AI evaluation calls.
-- **Production UX**: deterministic Listening/Reading band conversion (no LLM guessing at objective scores), retry on AI failures, error boundaries, autosaved in-progress tests, dark mode, responsive layout.
+- **Production UX**: Inter type system, refined sidebar/header/dashboard, deterministic Listening/Reading band conversion (no LLM guessing at objective scores), retry on AI failures, error boundaries, autosaved in-progress tests, consistent keyboard focus states, dark mode, responsive layout.
 - **Mock mode in development** — `npm run dev` uses local mock data instead of calling the Gemini API, so no API key is needed just to work on the UI.
 
 See [`FUTURE_WORK.md`](FUTURE_WORK.md) (untracked, local reference only) for the remaining production-hardening backlog.
+
+## Mock tests
+
+Mock tests are plain JSON files in `src/data/mockTests/`, loaded and code-split on demand. Each matches the `MockTest` type in `src/types`. Two full tests ship with the app (city life; health & medicine), each with a unique Writing and Speaking theme.
+
+To generate the remaining tests (3–10), each on its own distinct theme:
+
+```
+GEMINI_API_KEY=your_key npm run generate:mocks        # generates tests 2–10 (skips existing)
+GEMINI_API_KEY=your_key npm run generate:mocks 3 10   # a specific range
+```
+
+The generator (`scripts/generate-mock-tests.mjs`) calls Gemini with structured-output schemas, generates each section separately for reliability, and **validates** every test before writing it — checking the 4×10 listening / 13-13-14 reading structure, unique question IDs, present answers, valid True/False/Not Given values, and the presence of a matching-headings and a TFNG set. Invalid generations are retried, then skipped with an error rather than written.
+
+> Note: map/diagram-labelling questions from the real exam are represented here as multiple-choice location questions, because the app renders questions as text (there are no map images). Every question type in the app is objectively scorable.
 
 ## Tech Stack
 
@@ -33,17 +49,21 @@ See [`FUTURE_WORK.md`](FUTURE_WORK.md) (untracked, local reference only) for the
 │   ├── generate.ts          # Generates test content for a given section
 │   └── evaluate.ts          # Evaluates submitted answers and returns band scores
 ├── src/
-│   ├── components/          # React components (sections, dashboard, shared UI)
+│   ├── components/          # React components (sections, mock runner, dashboard, shared UI)
 │   ├── hooks/                # useSpeechSynthesis (TTS playback), useAudioRecorder (mic + transcription)
+│   ├── data/mockTests/       # Full mock tests as JSON (hand-authored + generated)
 │   ├── services/
 │   │   ├── apiService.ts    # Calls /api/* in production, mockService in dev
 │   │   ├── mockService.ts   # Local mock data used during `npm run dev`
+│   │   ├── mockTestService.ts # Loads mock test JSON, builds Task 1 chart URLs
 │   │   ├── scoringService.ts # Deterministic scoring + IELTS band conversion + analytics
-│   │   └── progressService.ts # localStorage history, streaks, and draft autosave
-│   ├── styles/               # Tailwind entry point + custom animations
+│   │   └── progressService.ts # localStorage history, streaks, drafts, mock results
+│   ├── styles/               # Tailwind entry point (Inter font, tokens) + animations
 │   ├── types/                # Shared TypeScript types
 │   ├── App.tsx
 │   └── main.tsx
+├── scripts/
+│   └── generate-mock-tests.mjs  # Gemini-backed mock test generator + validator
 ├── index.html
 ├── vercel.json              # Serverless function timeouts
 ├── vite.config.ts
@@ -75,6 +95,7 @@ In dev mode the app uses mock data by default (see `USE_MOCK_DATA` in `src/servi
 - `npm run dev` — start the Vite dev server (mock data)
 - `npm run build` — type-checked production build
 - `npm run preview` — preview the production build locally
+- `npm run generate:mocks` — generate mock tests into `src/data/mockTests/` (needs `GEMINI_API_KEY`)
 - `npm run test-api` — smoke-test the deployed `/api/generate` endpoint (edit the URL in `test-api.js` first)
 
 ## Deployment
