@@ -71,11 +71,20 @@ const ReadingTestRenderer: React.FC<{
 }
 
 
-const ReadingSection: React.FC = () => {
+interface ReadingSectionProps {
+    preset?: ReadingContent;
+    draftKey?: string;
+    onEvaluated?: (result: import('../types').EvaluationResult) => void;
+}
+
+const ReadingSection: React.FC<ReadingSectionProps> = ({ preset, draftKey, onEvaluated }) => {
     return (
         <BaseSection<ReadingContent, Answers>
             sectionTitle="Reading"
-            generateTest={generateReadingTest}
+            generateTest={preset ? undefined : generateReadingTest}
+            presetContent={preset}
+            draftKey={draftKey}
+            onEvaluated={onEvaluated}
             evaluateAnswers={async (content, answers) =>
                 scoreObjectiveTest(content.passages.flatMap(p => p.questions), answers, 'type')
             }

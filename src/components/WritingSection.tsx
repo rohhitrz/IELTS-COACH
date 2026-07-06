@@ -9,11 +9,20 @@ const countWords = (text: string) => {
     return text.trim().split(/\s+/).filter(Boolean).length;
 };
 
-const WritingSection: React.FC = () => {
+interface WritingSectionProps {
+    preset?: WritingContent;
+    draftKey?: string;
+    onEvaluated?: (result: import('../types').EvaluationResult) => void;
+}
+
+const WritingSection: React.FC<WritingSectionProps> = ({ preset, draftKey, onEvaluated }) => {
     return (
         <BaseSection<WritingContent, Answers>
             sectionTitle="Writing"
-            generateTest={generateWritingTest}
+            generateTest={preset ? undefined : generateWritingTest}
+            presetContent={preset}
+            draftKey={draftKey}
+            onEvaluated={onEvaluated}
             evaluateAnswers={(content, answers) => evaluateWriting(content.task1.prompt, answers.task1, content.task2.prompt, answers.task2)}
             initialAnswers={{ task1: '', task2: '' }}
             duration={3600} // 60 minutes

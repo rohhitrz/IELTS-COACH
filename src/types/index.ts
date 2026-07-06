@@ -1,6 +1,7 @@
 export enum ExamSection {
   WELCOME = 'WELCOME',
   DASHBOARD = 'DASHBOARD',
+  MOCK_TESTS = 'MOCK_TESTS',
   LISTENING = 'LISTENING',
   READING = 'READING',
   WRITING = 'WRITING',
@@ -74,7 +75,42 @@ export interface SpeakingContent {
   };
 }
 
-export type ExamContent = ListeningContent | ReadingContent | WritingContent | SpeakingContent;
+// A single part of a full mock listening test (the real exam has 4 parts × 10 questions)
+export interface ListeningPart {
+  title: string;
+  scenario: string;
+  transcript: string;
+  questions: Question[];
+}
+
+export interface MockListeningContent {
+  parts: ListeningPart[];
+}
+
+// A complete fixed mock test, authored or generated into src/data/mockTests/
+export interface MockTest {
+  id: string;
+  title: string;
+  theme: string;
+  listening: MockListeningContent;
+  reading: ReadingContent;
+  writing: {
+    task1: { prompt: string; chartData: ChartData };
+    task2: { prompt: string };
+  };
+  speaking: SpeakingContent;
+}
+
+export type MockSectionKey = 'listening' | 'reading' | 'writing' | 'speaking';
+
+export interface MockSectionResult {
+  band: number;
+  timestamp: number;
+}
+
+export type MockTestResults = Partial<Record<MockSectionKey, MockSectionResult>>;
+
+export type ExamContent = ListeningContent | ReadingContent | WritingContent | SpeakingContent | MockListeningContent;
 
 export interface EvaluationCriterion {
     band: number;

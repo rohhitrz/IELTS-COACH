@@ -19,7 +19,13 @@ import {
 
 interface BaseSectionProps<C extends ExamContent, A> {
   sectionTitle: Attempt['section'];
-  generateTest: () => Promise<C>;
+  generateTest?: () => Promise<C>;
+  /** Fixed content (mock tests): skips generation and starts the test immediately. */
+  presetContent?: C;
+  /** Storage key for draft autosave; defaults to the section title. Mock runs pass a per-test key. */
+  draftKey?: string;
+  /** Called after a successful evaluation (mock runner records section bands). */
+  onEvaluated?: (result: EvaluationResult) => void;
   evaluateAnswers: (content: C, answers: A) => Promise<EvaluationResult>;
   renderTest: (
     content: C,
@@ -34,18 +40,23 @@ interface BaseSectionProps<C extends ExamContent, A> {
 const BaseSection = <C extends ExamContent, A>({
   sectionTitle,
   generateTest,
+  presetContent,
+  draftKey,
+  onEvaluated,
   evaluateAnswers,
   renderTest,
   initialAnswers,
   duration,
 }: BaseSectionProps<C, A>) => {
+  const storageKey = draftKey ?? sectionTitle;
+
   // Restore an in-progress draft (e.g. a half-written essay) if one was autosaved.
   const restoredDraft = useRef<Draft<C, A> | null | undefined>(undefined);
   if (restoredDraft.current === undefined) {
-    restoredDraft.current = loadDraft<C, A>(sectionTitle);
+    restoredDraft.current = loadDraft<C, A>(storageKey);
   }
 
-  const [content, setContent] = useState<C | null>(restoredDraft.current?.content ?? null);
+  const [content, setContent] = useState<C | null>(restoredDraft.current?.content ?? presetContent ?? null);
   const [answers, setAnswers] = useState<A>(restoredDraft.current?.answers ?? initialAnswers);
   const [evaluation, setEvaluation] = useState<EvaluationResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -58,6 +69,7 @@ const BaseSection = <C extends ExamContent, A>({
   const startedAtRef = useRef<number>(restoredDraft.current?.startedAt ?? Date.now());
 
   const handleGenerateTest = useCallback(async () => {
+    if (!generateTest) return;
     setIsLoading(true);
     setError(null);
     setFailedAction(null);
@@ -88,8 +100,9 @@ const BaseSection = <C extends ExamContent, A>({
     try {
       const result = await evaluateAnswers(content, answers);
       setEvaluation(result);
-      clearDraft(sectionTitle);
+      clearDraft(storageKey);
       saveAttempt(sectionTitle, result);
+      onEvaluated?.(result);
 
       // Show confetti for good scores
       if (bandOf(result) >= 7) {
@@ -102,17 +115,17 @@ const BaseSection = <C extends ExamContent, A>({
     } finally {
       setIsEvaluating(false);
     }
-  }, [content, answers, evaluateAnswers, isEvaluating, sectionTitle]);
+  }, [content, answers, evaluateAnswers, isEvaluating, sectionTitle, storageKey, onEvaluated]);
 
   // Autosave the in-progress test so a refresh or crash never loses work.
   useEffect(() => {
     if (content && !evaluation) {
-      saveDraft(sectionTitle, content, answers, startedAtRef.current);
+      saveDraft(storageKey, content, answers, startedAtRef.current);
     }
-  }, [content, answers, evaluation, sectionTitle]);
+  }, [content, answers, evaluation, storageKey]);
 
   const startNewTest = () => {
-    clearDraft(sectionTitle);
+    clearDraft(storageKey);
     setContent(null);
     setEvaluation(null);
     setError(null);
@@ -233,7 +246,7 @@ const BaseSection = <C extends ExamContent, A>({
       )}
 
       {/* Generate Test Button */}
-      {!content && !isLoading && (
+      {!content && !isLoading && !!generateTest && (
         <AnimatedCard className="text-center p-12" delay={300}>
           <div className="space-y-4">
             <TrophyIcon className="w-16 h-16 mx-auto text-blue-500 dark:text-blue-400 animate-bounce-slow" />
@@ -302,6 +315,7 @@ const BaseSection = <C extends ExamContent, A>({
       {evaluation && (
         <div className="space-y-6">
           <EvaluationDisplay result={evaluation} />
+          {!presetContent && (
           <AnimatedCard className="text-center p-6" delay={600}>
             <div className="space-y-4">
               <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-100">
@@ -320,6 +334,7 @@ const BaseSection = <C extends ExamContent, A>({
               </div>
             </div>
           </AnimatedCard>
+          )}
         </div>
       )}
     </div>

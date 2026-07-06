@@ -41,8 +41,14 @@ const blobToBase64 = (blob: Blob): Promise<string> =>
     reader.readAsDataURL(blob);
   });
 
-const SpeakingSection: React.FC = () => {
-  const [content, setContent] = useState<SpeakingContent | null>(null);
+interface SpeakingSectionProps {
+  /** Fixed content (mock tests): starts the test immediately, no generation. */
+  preset?: SpeakingContent;
+  onEvaluated?: (result: SpeakingEvaluation) => void;
+}
+
+const SpeakingSection: React.FC<SpeakingSectionProps> = ({ preset, onEvaluated }) => {
+  const [content, setContent] = useState<SpeakingContent | null>(preset ?? null);
   const [answers, setAnswers] = useState<AnswersMap>({});
   const [activeTarget, setActiveTarget] = useState<string | null>(null);
   const [part2Phase, setPart2Phase] = useState<'idle' | 'prep' | 'recording' | 'done'>('idle');
@@ -202,6 +208,7 @@ const SpeakingSection: React.FC = () => {
 
       setEvaluation(result);
       saveAttempt('Speaking', result);
+      onEvaluated?.(result);
       if (result.overallBandScore >= 7) setShowConfetti(true);
     } catch (err) {
       setError('Failed to evaluate your answers. Your recordings are still here — you can retry.');
@@ -448,15 +455,17 @@ const SpeakingSection: React.FC = () => {
             </AnimatedCard>
           )}
           <EvaluationDisplay result={evaluation} />
-          <AnimatedCard className="text-center p-6" delay={600}>
-            <button
-              onClick={startNewTest}
-              className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-semibold rounded-xl shadow-lg hover:from-slate-700 hover:to-slate-800 transform hover:scale-105 transition-all duration-200"
-            >
-              <RefreshIcon className="w-5 h-5 mr-2" />
-              Try Another Test
-            </button>
-          </AnimatedCard>
+          {!preset && (
+            <AnimatedCard className="text-center p-6" delay={600}>
+              <button
+                onClick={startNewTest}
+                className="inline-flex items-center px-6 py-3 bg-gradient-to-r from-slate-600 to-slate-700 text-white font-semibold rounded-xl shadow-lg hover:from-slate-700 hover:to-slate-800 transform hover:scale-105 transition-all duration-200"
+              >
+                <RefreshIcon className="w-5 h-5 mr-2" />
+                Try Another Test
+              </button>
+            </AnimatedCard>
+          )}
         </div>
       )}
     </div>
