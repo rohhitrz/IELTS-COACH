@@ -14,7 +14,7 @@ import './styles/animations.css';
 
 const App: React.FC = () => {
   const [activeSection, setActiveSection] = useState<ExamSection>(ExamSection.WELCOME);
-  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'light');
+  const [theme, setTheme] = useState(localStorage.getItem('theme') || 'dark');
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
 
   useEffect(() => {
